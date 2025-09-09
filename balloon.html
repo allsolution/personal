@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1" />
+  <title>우진이의 풍선 터트리기 게임</title>
+  <style>
+    :root{--accent:#6bdcff;--text:#ffffff;--muted:#aac2e6}
+    body{margin:0;overflow:hidden;background:#0b1220;color:var(--text);font-family:ui-rounded,system-ui,-apple-system,Segoe UI,Roboto,Apple SD Gothic Neo,Noto Sans KR,sans-serif}
+    canvas{display:block;width:100vw;height:100vh;background:linear-gradient(180deg,#0b1220 0%, #0e1630 60%, #0b1220 100%)}
+    #hud{position:fixed;top:10px;left:10px;z-index:3;display:flex;gap:12px;align-items:center;visibility:hidden}
+    #hud .pill{background:rgba(255,255,255,.06);padding:8px 12px;border-radius:999px;border:1px solid rgba(255,255,255,.12)}
+    #legend{position:fixed;bottom:10px;left:10px;color:var(--muted);font-size:12px;z-index:2;visibility:hidden}
+    #overlay{position:fixed;inset:0;display:none;place-items:center;background:rgba(11,18,32,.7);backdrop-filter:blur(6px);z-index:4}
+    #overlay.show{display:grid}
+    #startScreen{position:fixed;inset:0;display:grid;place-items:center;background:#0b1220;z-index:5}
+    .card{background:#121a2b;border:1px solid rgba(255,255,255,.12);border-radius:14px;box-shadow:0 20px 60px rgba(0,0,0,.45);padding:22px 24px;min-width:280px;text-align:center;color:#fff}
+    .card h1{margin:0 0 8px;font-size:22px}
+    .card p{margin:8px 0 16px;color:var(--muted)}
+    .card .btn{cursor:pointer;border:none;padding:10px 14px;border-radius:10px;background:var(--accent);color:#002233;font-weight:700}
+  </style>
+</head>
+<body>
+<div id="hud">
+  <span class="pill">점수: <strong id="score">0</strong></span>
+  <span class="pill">실패: <strong id="miss">0</strong> / 15</span>
+  <span class="pill">레벨: <strong id="level">1</strong> / 10</span>
+</div>
+<div id="legend">팁: 스페이스바 = 현재 마우스 위치 <strong>클릭 효과</strong> (모바일은 탭)</div>
+<div id="overlay"><div class="card"><h1 id="ovTitle">게임 종료</h1><p id="ovDesc"></p><button id="again" class="btn">↻ 다시 시작</button></div></div>
+<div id="startScreen"><div class="card"><h1>우진이의 풍선 터트리기 게임</h1><p>버튼을 눌러 시작하세요!</p><button id="startBtn" class="btn">▶ 시작하기</button></div></div>
+<canvas id="c"></canvas>
+<script>
+(function(){
+  const canvas=document.getElementById('c');
+  const ctx=canvas.getContext('2d');
+  let W,H;function resize(){W=canvas.width=window.innerWidth;H=canvas.height=window.innerHeight}resize();addEventListener('resize',resize);
+
+  const HUD={score:byId('score'),miss:byId('miss'),level:byId('level')};
+  const overlay=byId('overlay');
+  const ovTitle=byId('ovTitle');
+  const ovDesc=byId('ovDesc');
+  const againBtn=byId('again');
+  const startScreen=byId('startScreen');
+  const startBtn=byId('startBtn');
+
+  const LEVELS=[
+    {spawn:[1000,1400], speed:[50,80], inflate:7.8, popAt:49},
+    {spawn:[ 950,1300], speed:[100,140], inflate:7.4, popAt:49.5},
+    {spawn:[ 900,1250], speed:[110,150], inflate:7.0, popAt:50},
+    {spawn:[ 850,1200], speed:[120,165], inflate:6.6, popAt:50.5},
+    {spawn:[ 800,1150], speed:[130,180], inflate:6.2, popAt:51},
+    {spawn:[ 760,1100], speed:[140,185], inflate:5.8, popAt:51.5},
+    {spawn:[ 720,1050], speed:[150,200], inflate:5.4, popAt:52},
+    {spawn:[ 700,1000], speed:[160,210], inflate:5.2, popAt:52.5},
+    {spawn:[ 680, 950], speed:[170,225], inflate:5.0, popAt:53},
+    {spawn:[ 660, 920], speed:[180,240], inflate:4.8, popAt:53.5}
+  ];
+
+  let level=1;
+  function setLevel(n){ level=Math.max(1, Math.min(10, n)); HUD.level.textContent=level; state.nextSpawn = randIn(LEVELS[level-1].spawn); }
+
+  const state={balloons:[],particles:[],score:0,miss:0,running:false,spawnTimer:0,nextSpawn:randIn(LEVELS[0].spawn),maxMiss:15};
+  const COLORS=['#ff6b6b','#ffd93d','#6bffb3','#6bdcff','#c394ff','#ffa1e2'];
+
+  class Balloon{ constructor(){ const d=LEVELS[level-1]; this.r=18+Math.random()*16; this.x=Math.random()*(W-this.r*2)+this.r; this.y=H+this.r*3+Math.random()*60; this.vy=-(rand(d.speed[0],d.speed[1]))/60; this.color=COLORS[(Math.random()*COLORS.length)|0]; this.grow=0;this.alive=true; this.popAt=d.popAt; } get radius(){return this.r+this.grow} step(){ this.y+=this.vy; this.x+=Math.sin(this.y*0.01)*0.5; if(this.y - this.radius < -20){ this.alive=false; onMiss(); } } draw(){ const r=this.radius, cx=this.x, cy=this.y; ctx.strokeStyle='rgba(255,255,255,.25)';ctx.lineWidth=1;ctx.beginPath(); ctx.moveTo(cx, cy + r); ctx.quadraticCurveTo(cx-6, cy+r+8, cx-2, cy+r+28); ctx.stroke(); const grad=ctx.createRadialGradient(cx - r*0.3, cy - r*0.4, r*0.2, cx, cy, r); grad.addColorStop(0,'rgba(255,255,255,.85)'); grad.addColorStop(0.05,'rgba(255,255,255,.6)'); grad.addColorStop(0.2, hexA(this.color,0.8)); grad.addColorStop(1,   hexA(this.color,0.1)); ctx.fillStyle=grad; ctx.beginPath(); ctx.ellipse(cx, cy, r*0.85, r, 0, 0, Math.PI*2); ctx.fill(); ctx.fillStyle=this.color; ctx.beginPath(); ctx.moveTo(cx-3, cy+r-2); ctx.lineTo(cx+3, cy+r-2); ctx.lineTo(cx, cy+r+3); ctx.closePath(); ctx.fill(); } hit(px,py){const dx=px-this.x,dy=py-this.y;return dx*dx+dy*dy<=this.radius*this.radius} inflate(){const d=LEVELS[level-1]; this.grow+=d.inflate; if(this.radius>this.popAt){ this.pop(); }} pop(){ this.alive=false; createParticles(this.x,this.y,this.color); } }
+
+  class Particle{ constructor(x,y,color){ this.x=x; this.y=y; this.vx=(Math.random()-0.5)*5.2; this.vy=(Math.random()-0.5)*5.2; this.life=1; this.color=color; this.used=false; } step(){ this.x+=this.vx; this.y+=this.vy; this.vy+=0.05; this.life-=0.024; if(!this.used){ for(let i=state.balloons.length-1;i>=0;i--){ const b=state.balloons[i]; if(!b.alive) continue; const dx=this.x-b.x, dy=this.y-b.y; const rr=b.radius; if(dx*dx+dy*dy<=rr*rr){ b.inflate(); this.used=true; break; } } } } draw(){ ctx.globalAlpha=this.life; ctx.fillStyle=this.color; ctx.beginPath(); ctx.arc(this.x,this.y,2,0,Math.PI*2); ctx.fill(); ctx.globalAlpha=1; } }
+
+  function createParticles(x,y,color){ for(let i=0;i<12;i++) state.particles.push(new Particle(x,y,color)); state.score+=10; HUD.score.textContent=state.score; maybeLevelUp(); if(state.score>=1000){ endGame('win'); } let nearest=null, nd=1e9; for(const b of state.balloons){ if(!b.alive) continue; const dx=b.x-x, dy=b.y-y; const d2=dx*dx+dy*dy; if(d2<nd){ nd=d2; nearest=b; } } if(nearest){ const d=Math.sqrt(nd); if(d < nearest.radius + 24){ nearest.inflate(); } } }
+
+  function onMiss(){ state.miss++; HUD.miss.textContent = state.miss; if(state.miss>=state.maxMiss){ endGame('lose'); } }
+
+  function endGame(kind){ state.running=false; overlay.classList.add('show'); if(kind==='win'){ ovTitle.textContent='게임 승리! 🏆'; ovDesc.textContent=`축하합니다! 최종 점수 ${state.score.toLocaleString()}점 · 레벨 ${level}/10`; } else { ovTitle.textContent='게임 종료'; ovDesc.textContent=`최종 점수 ${state.score.toLocaleString()}점 · 실패 ${state.miss}/${state.maxMiss} · 레벨 ${level}/10`; } }
+
+  againBtn.addEventListener('click', restart);
+  addEventListener('keydown', e=>{ if(e.key==='r' || e.key==='R'){ restart(); } });
+  function restart(){ state.balloons.length=0; state.particles.length=0; state.score=0; state.miss=0; HUD.score.textContent='0'; HUD.miss.textContent='0'; setLevel(1); state.spawnTimer=0; state.nextSpawn=randIn(LEVELS[level-1].spawn); state.running=true; overlay.classList.remove('show'); HUD.level.textContent='1'; HUD.score.textContent='0'; HUD.miss.textContent='0'; HUD.level.parentElement.style.visibility='visible'; document.getElementById('hud').style.visibility='visible'; document.getElementById('legend').style.visibility='visible'; requestAnimationFrame(loop); }
+
+  startBtn.addEventListener('click', ()=>{ startScreen.style.display='none'; state.running=true; document.getElementById('hud').style.visibility='visible'; document.getElementById('legend').style.visibility='visible'; requestAnimationFrame(loop); });
+
+  function maybeLevelUp(){ const targetLevel = Math.min(10, Math.floor(state.score/100) + 1); if(targetLevel !== level){ setLevel(targetLevel); } }
+
+  function pressAt(x,y){ for(let i=state.balloons.length-1;i>=0;i--){ const b=state.balloons[i]; if(b.alive&&b.hit(x,y)){ b.inflate(); break; } } }
+  const mouse={x:W/2,y:H/2};
+  canvas.addEventListener('mousemove',e=>{ const r=canvas.getBoundingClientRect(); mouse.x=e.clientX-r.left; mouse.y=e.clientY-r.top; });
+  canvas.addEventListener('click',e=>{ const r=canvas.getBoundingClientRect(); pressAt(e.clientX-r.left, e.clientY-r.top); });
+  addEventListener('keydown',e=>{ if(e.code==='Space' && !state.running && startScreen.style.display!=='none'){ e.preventDefault(); startScreen.style.display='none'; state.running=true; document.getElementById('hud').style.visibility='visible'; document.getElementById('legend').style.visibility='visible'; requestAnimationFrame(loop); } else if(e.code==='Space' && state.running){ e.preventDefault(); pressAt(mouse.x, mouse.y); } });
+
+  function rand(a,b){return a+Math.random()*(b-a)}
+  function randIn([a,b]){return Math.floor(rand(a,b))}
+  function hexA(hex,alpha){ const h=hex.replace('#',''); const r=parseInt(h.substr(0,2),16), g=parseInt(h.substr(2,2),16), b=parseInt(h.substr(4,2),16); return `rgba(${r},${g},${b},${alpha})`; }
+
+  setLevel(1);
+
+  let prev=performance.now();
+  function loop(){ if(!state.running) return; requestAnimationFrame(loop); const now=performance.now(); const dt=now-prev; prev=now; state.spawnTimer += dt; if(state.spawnTimer >= state.nextSpawn){ state.spawnTimer = 0; state.nextSpawn = randIn(LEVELS[level-1].spawn); let count = Math.min(1 + Math.floor(level/3), 4); for(let k=0;k<count;k++){ state.balloons.push(new Balloon()); } } ctx.clearRect(0,0,W,H); state.balloons.forEach(b=>b.step()); state.particles.forEach(p=>p.step()); state.balloons=state.balloons.filter(b=>b.alive); state.particles=state.particles.filter(p=>p.life>0); state.balloons.forEach(b=>b.draw()); state.particles.forEach(p=>p.draw()); }
+
+  function byId(id){ return document.getElementById(id); }
+})();
+</script>
+</body>
+</html>
