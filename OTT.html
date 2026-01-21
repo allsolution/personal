@@ -1,0 +1,646 @@
+<!DOCTYPE html>
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8"><title>OTT List</title>
+    <style type="text/css">
+        :root {
+            --flex-gap: 1rem;
+            --dly: 0;
+            /* Variable for gap */
+        }
+
+        *,
+        *::after,
+        *::before {
+            box-sizing: border-box;
+        }
+
+        body {
+            background: #202124;
+            color: #ffffff;
+        }
+
+        header {
+            display: flex;
+            text-align: center;
+            align-items: center;
+            justify-content: space-around;
+        }
+
+        button {
+            background-color: #4CAF50; /* Green */
+            border-radius: 12px;
+            border: none;
+            color: white;
+            padding: 15px 15px;
+            text-align: center;
+            text-decoration: none;
+            display: inline-block;
+            font-size: 16px;
+        }
+        
+        input[type=text] {
+            font-size: 20px;
+            font-weight: bold;
+            border: 2px solid #202124;
+            border-radius: 4px;
+            padding: 5px;
+            width: 350px;
+            margin-top: 10px;
+            margin-bottom: 10px;
+        }
+        
+        .popup_cover {
+            display: none;
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.8);
+            z-index: 99;
+        }
+        
+        .popup_layer {
+            width:400px;
+            position:absolute;
+            border-radius: 15px;
+            left:50%;
+            top:50%;
+            margin-left:-200px;
+            margin-top:-250px;
+            z-index: 999999;
+            background-color:#303134;
+            font-size: 20px;
+            font-weight: bold;
+            text-align: center;
+            align-items: center;
+            justify-content: center;
+            animation: fadein 500ms, moveup 500ms;
+            -moz-animation: fadein 500ms, moveup 500ms;
+            /* Firefox */
+            -webkit-animation: fadein 500ms, moveup 500ms;
+            /* Safari and Chrome */
+            -o-animation: fadein 500ms, moveup 500ms;
+            /* Opera */
+        }
+        
+        .popup_layer>div {
+            margin-top: 10px;
+            margin-bottom: 10px;
+        }
+        
+        .popup_footer {
+            display: flex;
+            justify-content: space-around;
+            text-align: center;
+            align-items: center;
+        }
+        
+        .popup_footer>a {
+            color: #ffffff;
+            text-decoration: none;
+        }
+        
+        .add_link_icon {
+            font-size: 60px;
+        }
+        
+        .button_red {
+            background-color: #f44336;
+            margin-left: 8px;
+        }
+
+        /* 탭 전체 스타일 */
+
+        .tabs {
+            margin-top: 50px;
+            padding-bottom: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+            width: 100%;
+            margin: 0 auto;
+        }
+
+        /* 탭 스타일 */
+
+        .tab_item {
+            width: calc(100%/5);
+            height: 50px;
+            border-bottom: 3px solid #333333;
+            background-color: rgb(200, 200, 200);
+            line-height: 50px;
+            font-size: 16px;
+            color: #333333;
+            display: block;
+            float: left;
+            text-align: center;
+            font-weight: bold;
+            transition: all 0.2s ease;
+        }
+
+        .tab_item:hover {
+            opacity: 0.75;
+        }
+
+        /* 라디오 버튼 UI삭제*/
+
+        input[name="tab_item"] {
+            display: none;
+        }
+
+        /* 탭 컨텐츠 스타일 */
+
+        .tab_content {
+            display: none;
+            padding-top: 10px;
+            clear: both;
+            overflow: hidden;
+        }
+
+        #sc_content>img {
+            width: 100%;
+            animation: fadein 500ms, moveup 500ms;
+            -moz-animation: fadein 500ms, moveup 500ms;
+            /* Firefox */
+            -webkit-animation: fadein 500ms, moveup 500ms;
+            /* Safari and Chrome */
+            -o-animation: fadein 500ms, moveup 500ms;
+            /* Opera */
+        }
+
+        /* 선택 된 탭 콘텐츠를 표시 */
+
+        #ott:checked~#ott_content,
+        #onair:checked~#onair_content,
+        #games:checked~#games_content,
+        #sc:checked~#sc_content,
+        #links:checked~#links_content {
+            display: block;
+        }
+
+        /* 선택된 탭 스타일 */
+
+        .tabs input:checked+.tab_item {
+            background-color: #333333;
+            color: #fff;
+        }
+
+        .flex_container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: var(--flex-gap);
+            /*justify-content: space-between;*/
+        }
+
+        .flex_item {
+            display: flex;
+            --flex-items: 1;
+            /* Variable for number of items */
+            width: calc((100% / var(--flex-items)) - (((var(--flex-items) - 1) / var(--flex-items)) * var(--flex-gap)));
+            padding: 1rem;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+            text-align: center;
+            align-items: center;
+            justify-content: center;
+            border-radius: 15px;
+            background: rgb(100, 100, 100);
+            animation: fadein 500ms, moveup 500ms;
+            -moz-animation: fadein 500ms, moveup 500ms;
+            /* Firefox */
+            -webkit-animation: fadein 500ms, moveup 500ms;
+            /* Safari and Chrome */
+            -o-animation: fadein 500ms, moveup 500ms;
+            /* Opera */
+            animation-delay: calc(50ms * var(--dly));
+            animation-fill-mode: forwards;
+            font-size: 20px;
+            font-weight: bold;
+            opacity: 0;
+        }
+
+        .flex_item>a {
+            color: #ffffff;
+            display: flex;
+            width: 100%;
+            height: 100%;
+            text-decoration: none;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+        }
+        
+        .flex_item>a>.link_edit {
+            position: absolute;
+            top: 5px;
+            right: 5px;
+        }
+        
+        .flex_item>a>img {
+            max-height: 50px;
+            max-width: 200px;
+        }
+
+        .flex_item_list {
+            --flex-items: 4;
+            height: 200px;
+        }
+
+        .flex_item_full {
+            --flex-items: 1;
+            text-align: center;
+            align-items: center;
+            flex-direction: column;
+        }
+
+        .flex_item_full>img {
+            width: 100px;
+        }
+
+        @media (max-width: 1240px) {
+            .flex_item_list {
+                --flex-items: 3;
+            }
+        }
+
+        @media (max-width: 800px) {
+            .flex_item_list {
+                --flex-items: 2;
+            }
+        }
+
+        @media (max-width: 640px) {
+            .flex_item_list {
+                --flex-items: 1;
+            }
+        }
+
+        @keyframes moveup {
+            from {
+                transform: translateY(20px);
+            }
+            to {
+                transform: translateY(0px);
+            }
+        }
+
+        @keyframes moveup {
+            from {
+                transform: translateY(20px);
+            }
+            to {
+                transform: translateY(0px);
+            }
+        }
+
+        @-moz-keyframes moveup {
+            from {
+                transform: translateY(20px);
+            }
+            to {
+                transform: translateY(0px);
+            }
+        }
+
+        @-webkit-keyframes moveup {
+            from {
+                transform: translateY(20px);
+            }
+            to {
+                transform: translateY(0px);
+            }
+        }
+
+        @-o-keyframes moveup {
+            from {
+                transform: translateY(20px);
+            }
+            to {
+                transform: translateY(0px);
+            }
+        }
+
+        @keyframes fadein {
+            from {
+                opacity: 0;
+            }
+            to {
+                opacity: 1;
+            }
+        }
+
+        @-moz-keyframes fadein {
+            /* Firefox */
+            from {
+                opacity: 0;
+            }
+            to {
+                opacity: 1;
+            }
+        }
+
+        @-webkit-keyframes fadein {
+            /* Safari and Chrome */
+            from {
+                opacity: 0;
+            }
+            to {
+                opacity: 1;
+            }
+        }
+
+        @-o-keyframes fadein {
+            /* Opera */
+            from {
+                opacity: 0;
+            }
+            to {
+                opacity: 1;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="tabs">
+        <input id="ott" type="radio" name="tab_item" checked="">
+        <label class="tab_item" for="ott">OTT</label>
+        <input id="onair" type="radio" name="tab_item">
+        <label class="tab_item" for="onair">지상파/종합편성</label>        
+        <div class="tab_content" id="ott_content">
+            <div class="flex_container" id="otts_container"></div>
+        </div>
+        <div class="tab_content" id="onair_content">
+            <div class="flex_container" id="onairs_container"></div>
+        </div>
+        <div class="tab_content" id="links_content">
+            <div class="flex_container" id="links_container">
+            <div class="flex_item flex_item_list" style="--dly: 1;"><a href="http://tkc.kr/#"><i class="fa-solid fa-plus add_link_icon"></i><div>링크 추가</div></a></div></div>
+        </div>
+    </div>
+    <div class="popup_cover" id="popup_cover_div">
+        <div class="popup_layer" id="addLinkDiv"> <div id="link_edit_title">
+                링크
+            </div>
+            <div id="link_edit_content">
+                <input id="link_idx" type="hidden">
+                <input id="link_name" type="text" placeholder="링크 이름">
+                <input id="link_addr" type="text" placeholder="링크 주소">
+            </div> 
+            <div class="popup_footer">
+                <button onclick="saveLinkEditPopup()">저장</button> 
+                <button class="button_red" onclick="closeLinkEditPopup()">취소</button> 
+            </div> 
+        </div>
+    </div>
+    <script>
+    function ottInit() {
+        let ottsArr = [
+            {
+                link: "www.disneyplus.com/ko-kr/home",
+                img: "https://static-assets.bamgrid.com/product/disneyplus/images/disney-plus-logo-white-update.f384bde4d5a7f1f455e2dc7d8d4348ae.png",
+                name: "Disney+"
+            },
+            {
+                link: "tving.com",
+                img: "https://image.tving.com/theme/tving_new/img/logo/favicon.ico",
+                name: "TVING"
+            },
+            {
+                link: "wavve.com",
+                img: "https://www.wavve.com/favicon.ico",
+                name: "Wavve"
+            },
+            {
+                link: "www.coupangplay.com",
+                img: "https://assets.coupangplay.com/favicon.ico",
+                name: "Coupang Play"
+            },
+            {
+                link: "www.netflix.com/kr",
+                img: "https://images.ctfassets.net/4cd45et68cgf/Rx83JoRDMkYNlMC9MKzcB/2b14d5a59fc3937afd3f03191e19502d/Netflix-Symbol.png?w=700&h=456",
+                name: "Netflix"
+            },
+            {
+                link: "tv.apple.com/kr",
+                img: "https://tv.apple.com/assets/app-icons/pwa-manifest/tv-icon_512.png",
+                name: "Apple TV+"
+            }
+        ]
+        let parentDiv = document.getElementById('otts_container')
+        ottsArr.forEach((ott, idx) => {
+            let newDiv = document.createElement('div')
+            let aTag = document.createElement('a')
+            let imgTag = document.createElement('img')
+            let nameDiv = document.createElement('div')
+            newDiv.className = 'flex_item flex_item_list'
+            newDiv.style.setProperty('--dly', idx+1)
+            aTag.href = `http://www.youtube.com/redirect?q=${ott.link}`
+            aTag.target = '_blank'
+            imgTag.src = ott.img
+            nameDiv.innerText = ott.name
+            aTag.appendChild(imgTag)
+            aTag.appendChild(nameDiv)
+            newDiv.appendChild(aTag)
+            parentDiv.appendChild(newDiv)
+        })
+    }
+    function onairInit() {
+        let onairsArr = [
+            {
+                link: "www.sbs.co.kr/live/S01",
+                img: "https://image.cloud.sbs.co.kr/default/sbs_logo.png",
+                name: "SBS"
+            },
+            {
+                link: "onair.kbs.co.kr/index.html?sname=onair&stype=live&ch_code=11",
+                img: "https://res.static.kbs.co.kr/img/ch/11.svg",
+                name: "KBS 1"
+            },
+            {
+                link: "onair.kbs.co.kr/index.html?sname=onair&stype=live&ch_code=12",
+                img: "https://res.static.kbs.co.kr/img/ch/12.svg",
+                name: "KBS 2"
+            },
+            {
+                link: "onair.imbc.com/?chid=0",
+                img: "https://talkimg.imbc.com/TVianUpload/tvian/TViews/image/2023/08/31/725001a1-50b7-4573-93af-29ed44e42c20.jpg",
+                name: "MBC"
+            },
+            {
+                link: "www.ebs.co.kr/onair?channelCodeString=tv",
+                img: "https://global.ebs.co.kr/global/img/sub/Channels_ebs1.png",
+                name: "EBS 1"
+            },
+            {
+                link: "www.ebs.co.kr/onair?channelCodeString=tv2",
+                img: "https://global.ebs.co.kr/global/img/sub/Channels_ebs2.png",
+                name: "EBS 2"
+            },
+            {
+                link: "onair.jtbc.co.kr",
+                img: "https://nstatic.jtbc.co.kr/inc/images/ci.png",
+                name: "JTBC"
+            },
+            {
+                link: "broadcast.tvchosun.com/onair/on.cstv",
+                img: "https://upload.wikimedia.org/wikipedia/commons/thumb/1/1e/TV_Chosun_Logo_%28English%29.svg/2560px-TV_Chosun_Logo_%28English%29.svg.png",
+                name: "TV조선"
+            },
+            {
+                link: "www.ichannela.com/com/cmm/onair.do",
+                img: "https://www.ichannela.com/publish/images/common/logo.png",
+                name: "채널A"
+            }
+        ]
+        let parentDiv = document.getElementById('onairs_container')
+        onairsArr.forEach((ott, idx) => {
+            let newDiv = document.createElement('div')
+            let aTag = document.createElement('a')
+            let imgTag = document.createElement('img')
+            let nameDiv = document.createElement('div')
+            newDiv.className = 'flex_item flex_item_list'
+            newDiv.style.setProperty('--dly', idx+1)
+            aTag.href = `http://www.youtube.com/redirect?q=${ott.link}`
+            aTag.target = '_blank'
+            imgTag.src = ott.img
+            nameDiv.innerText = ott.name
+            aTag.appendChild(imgTag)
+            aTag.appendChild(nameDiv)
+            newDiv.appendChild(aTag)
+            parentDiv.appendChild(newDiv)
+        })
+    }
+    function initialize() {
+        let linksArr = new Array()
+        let customLinks = localStorage.getItem('customLinks')
+        if (customLinks) {
+            linksArr = JSON.parse(customLinks)
+            let parentDiv = document.getElementById('links_container')
+            linksArr.forEach((link, idx) => {
+                let newDiv = document.createElement('div')
+                let aTag = document.createElement('a')
+                let nameDiv = document.createElement('div')
+                let linkDiv = document.createElement('div')
+                let btnDiv = document.createElement('div')
+                let editBtn = document.createElement('button')
+                let delBtn = document.createElement('button')
+                let editIco = document.createElement('i')
+                let delIco = document.createElement('i')
+                newDiv.className = 'flex_item flex_item_list'
+                newDiv.style.setProperty('--dly', idx+1)
+                aTag.href = `http://www.youtube.com/redirect?q=${link.link}`
+                aTag.target = '_blank'
+                nameDiv.innerText = link.name
+                linkDiv.innerText = link.link
+                btnDiv.className = 'link_edit'
+                editIco.className = 'fa-regular fa-pen-to-square'
+                delIco.className = 'fa-solid fa-trash'
+                delBtn.className = 'button_red'
+                editBtn.appendChild(editIco)
+                delBtn.appendChild(delIco)
+                editBtn.onclick = () => {
+                    let popupCoverDiv = document.getElementById('popup_cover_div')
+                    let popupTitleDiv = document.getElementById('link_edit_title')
+                    let linkIdx = document.getElementById('link_idx')
+                    let linkName = document.getElementById('link_name')
+                    let linkAddr = document.getElementById('link_addr')
+                    linkIdx.value = idx
+                    linkName.value = link.name
+                    linkAddr.value = link.link
+                    popupTitleDiv.innerText = '링크 수정'
+                    popupCoverDiv.style.display = 'block'
+                    return false
+                }
+                delBtn.onclick = () => {
+                    if (confirm('정말로 이 링크를 삭제하시겠습니까?')) {
+                        linksArr.splice(idx, 1)
+                        localStorage.setItem('customLinks', JSON.stringify(linksArr))
+                        parentDiv.innerHTML = ''
+                        initialize()
+                    }
+                    return false
+                }
+                btnDiv.appendChild(editBtn)
+                btnDiv.appendChild(delBtn)
+                aTag.appendChild(btnDiv)
+                aTag.appendChild(nameDiv)
+                aTag.appendChild(linkDiv)
+                newDiv.appendChild(aTag)
+                parentDiv.appendChild(newDiv)
+            })
+        }
+        let parentDiv = document.getElementById('links_container');
+        let addDiv = document.createElement('div')
+        let aTag = document.createElement('a')
+        let addIco = document.createElement('i')
+        let addTextDiv = document.createElement('div')
+        addDiv.className = 'flex_item flex_item_list'
+        addDiv.style.setProperty('--dly', linksArr.length+1)
+        addIco.className = 'fa-solid fa-plus add_link_icon'
+        addTextDiv.innerText = '링크 추가'
+        aTag.href = '#'
+        aTag.onclick = () => {
+            console.log('add l')
+            let popupCoverDiv = document.getElementById('popup_cover_div')
+            let popupTitleDiv = document.getElementById('link_edit_title')
+            let linkIdx = document.getElementById('link_idx')
+            let linkName = document.getElementById('link_name')
+            let linkAddr = document.getElementById('link_addr')
+            linkIdx.value = -1
+            linkName.value = ''
+            linkAddr.value = ''
+            popupTitleDiv.innerText = '링크 추가'
+            popupCoverDiv.style.display = 'block'
+            return false
+        }
+        aTag.appendChild(addIco)
+        aTag.appendChild(addTextDiv)
+        addDiv.appendChild(aTag)
+        parentDiv.appendChild(addDiv)
+        // console.log(linksArr, linksArr.length)
+    }
+    function saveLinkEditPopup() {
+        let popupCoverDiv = document.getElementById('popup_cover_div')
+        let linkIdx = document.getElementById('link_idx')
+        let linkName = document.getElementById('link_name')
+        let linkAddr = document.getElementById('link_addr')
+        if (!linkName.value) {
+            window.alert('링크 이름을 입력해 주세요.')
+        }
+        else if (!linkAddr.value) {
+            window.alert('링크 주소를 입력해 주세요.')
+        }
+        else {
+            let linksArr = new Array()
+            let customLinks = localStorage.getItem('customLinks')
+            let parentDiv = document.getElementById('links_container');
+            if (customLinks) {
+                linksArr = JSON.parse(customLinks)
+            }
+            if (linkIdx.value == -1) {
+                linksArr.push({
+                    name: linkName.value,
+                    link: linkAddr.value
+                })
+                localStorage.setItem('customLinks', JSON.stringify(linksArr))
+            }
+            else {
+                linksArr[linkIdx.value].name = linkName.value
+                linksArr[linkIdx.value].link = linkAddr.value
+                localStorage.setItem('customLinks', JSON.stringify(linksArr))
+            }
+            parentDiv.innerHTML = ''
+            initialize()
+            popupCoverDiv.style.display = 'none'
+        }
+    }
+    function closeLinkEditPopup() { 
+        let popupCoverDiv = document.getElementById('popup_cover_div')
+        popupCoverDiv.style.display = 'none'
+    }
+    ottInit()
+    onairInit()
+    initialize()
+    </script>
+
+
+
+<deepl-input-controller translate="no"><template shadowrootmode="open"><link rel="stylesheet" href="chrome-extension://cofdbpoegempjloogbagkncekinflcnj/build/content.css"><div dir="ltr" style="visibility: initial !important;"><div class="dl-input-translation-container svelte-95aucy"><div></div></div></div></template></deepl-input-controller><div class="glasp-extension-toaster" style="display: block; width: 320px; margin: unset; padding: unset; border: unset; border-radius: unset; outline: unset; background-color: unset; box-shadow: unset; position: fixed; top: 40px; right: 24px; z-index: 9999;"><template shadowrootmode="open"><div class="glasp-extension" style="font-family: inherit;"></div></template></div></body><div class="glasp-extension" style="display: block; width: unset; margin: unset; padding: unset; border: unset; border-radius: unset; outline: unset; background-color: unset; box-shadow: unset; position: fixed; bottom: 16px; right: 16px; z-index: 9999;"><div class="glasp-extension" style="font-family: inherit;"></div></div></html>
